@@ -1,0 +1,29 @@
+{
+  "name": "render-templates-generator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "render-templates-generator": "./bin/cli.js"
+  },
+  "preferGlobal": true,
+  "devDependencies": {
+    "jasmine-node": "^2.0.1"
+  },
+  "scripts": {
+    "test": "jasmine-node spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/huzder/render-templates-generator.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/huzder/render-templates-generator/issues"
+  },
+  "homepage": "https://github.com/huzder/render-templates-generator#readme",
+  "dependencies": {
+    "@rgrove/parse-xml": "^2.0.0"
+  }
+}
