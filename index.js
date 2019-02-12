@@ -1,9 +1,6 @@
 const parseXML = require("@rgrove/parse-xml"), EOL = require("os").EOL, fs = require("fs"), path = require("path");
 
-
-function normalizeHtmlStr(str) {
-    return str.replace(/\r*\n*/g, "").replace(/\s{2,}/g, " ").trim();
-}
+function normalizeHtmlStr(str) { return str.replace(/\r*\n*/g, "").replace(/\s{2,}/g, " ").trim(); }
 function createNsEntity(data) {
     let ns_name = data.name.split(':');
     let result = ns_name.length === 1 ? { name: ns_name[0], ns: "" } : { name: ns_name[1], ns: ns_name[0] };
@@ -77,12 +74,12 @@ class CodeWriter {
             `}`,
             `this.renderElement($0, $1, $2, $3, function($4) {`,
             `});`,
-            `this.renderLiteral($0, $1, "$2", $3);`,
+            `this.renderLiteral($0, $1, "$2", [$3]);`,
             `this.renderContent($0, $1, $2);`,
-            `this.renderComponent($0, $1, $2, $3);`,
+            `this.renderComponent($0, $1, $2, [$3]);`,
             `this.iterate($0, $1, $2, function($3) {`,
             `});`,
-            `this.updateProperty($0, "$1", "$2", $3);`,
+            `this.updateProperty($0, "$1", "$2", [$3]);`,
             `var viewModel = this.resolveViewModel("$0");`
         );
     }
@@ -114,17 +111,17 @@ class CodeWriter {
     }
     renderLiteral(index, expr) {
         let textModel = this.parseText(expr);
-        this.codeStrings.renderLiteral(this.container(), index, textModel.format, `[${textModel.properties.join(", ")}]`);
+        this.codeStrings.renderLiteral(this.container(), index, textModel.format, `${textModel.properties.join(", ")}`);
     }
     renderContent(index, expr) {
         this.codeStrings.renderContent(this.container(), index, this.getterFor(expr));
     }
     renderComponent(index, type, args) {
-        this.codeStrings.renderComponent(this.container(), index, type, `[${args.split(",").map(a => this.getterFor(a.trim()))}]`);
+        this.codeStrings.renderComponent(this.container(), index, type, `${args.split(",").map(a => this.getterFor(a.trim()))}`);
     }
     updateProperty(name, expr) {
         let textModel = this.parseText(expr);
-        this.codeStrings.updateProperty(this.container(), name, textModel.format, `[${textModel.properties.join(", ")}]`);
+        this.codeStrings.updateProperty(this.container(), name, textModel.format, `${textModel.properties.join(", ")}`);
     }
     registerPipeline(alias, code) { this.pipes[alias] = code; }
     getPipelineLangTarget() { return null; }
@@ -183,6 +180,14 @@ class CSharpCodeWriter extends CodeWriter {
         this.indentLevel++;
         this.write("public partial class " + name + ": ComponentBase {");
         this.indentLevel++;
+        this.write(`public const string`);
+        this.write(`                 ${name}-v3_CssResourceName = GeneratedFolder + "${name}-v3.generated.css",`);
+        this.write(`                 ${name}-v4_CssResourceName = GeneratedFolder + "${name}-v4.generated.css",`);
+        this.write(`                 ${name}-JavascriptResourceName = GeneratedFolder + "${name}.generated.js";`);
+        this.write(`public override string GetV3CssResourceName() { return ${name}-v3_CssResourceName; }`);
+        this.write(`public override string GetV4CssResourceName() { return ${name}-v4_CssResourceName; }`);
+        this.write(`public override string GetScriptResourceName() { return ${name}-JavascriptResourceName; }`);
+        this.write(``);
         this.write(`public override void CreateLayout(WebControl ${this.container()}) {`);
         this.indentLevel++;
     }

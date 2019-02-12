@@ -102,18 +102,26 @@ describe("CodeWriter", function () {
         });
         it("writes correct code", function () {
             expect(codeWriter.createCodeString()).toBe(
-                `using DevExpress.Web.Bootstrap.Internal.Components.Core;
+`using DevExpress.Web.Bootstrap.Internal.Components.Core;
 
 namespace DevExpress.Web.Bootstrap.Internal.Components {
    public partial class PanelComponent: ComponentBase {
+       public const string
+                        PanelComponent-v3_CssResourceName = GeneratedFolder + "PanelComponent-v3.generated.css",
+                        PanelComponent-v4_CssResourceName = GeneratedFolder + "PanelComponent-v4.generated.css",
+                        PanelComponent-JavascriptResourceName = GeneratedFolder + "PanelComponent.generated.js";
+       public override string GetV3CssResourceName() { return PanelComponent-v3_CssResourceName; }
+       public override string GetV4CssResourceName() { return PanelComponent-v4_CssResourceName; }
+       public override string GetScriptResourceName() { return PanelComponent-JavascriptResourceName; }
+       
        public override void CreateLayout(WebControl container0) {
            var viewModel = ResolveViewModel<ComponentViewModel1>();
            CreateElement(container0, div, 0, null, (container1) => {
-               UpdateProperty(container1, "class", "class1 $0", [viewModel.CssClassName]);
-               CreateLiteral(container1, 0, "test $0", [viewModel.Field1]);
+               UpdateProperty(container1, "class", "class1 $0", viewModel.CssClassName);
+               CreateLiteral(container1, 0, "test $0", viewModel.Field1);
                Iterate(container1, 1, VisibleItems, (itemRef) => {
                    CreateContent(container1, 0, viewModel.PanelContent);
-                   CreateComponent(container1, 1, SubcomponentType, [viewModel.ArgField1,itemRef.isChecked]);
+                   CreateComponent(container1, 1, SubcomponentType, viewModel.ArgField1,itemRef.isChecked);
                });
            });
        }
