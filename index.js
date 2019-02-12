@@ -111,7 +111,8 @@ class CodeWriter {
     }
     renderLiteral(index, expr) {
         let textModel = this.parseText(expr);
-        this.codeStrings.renderLiteral(this.container(), index, textModel.format, `${textModel.properties.join(", ")}`);
+        if(textModel.format)
+            this.codeStrings.renderLiteral(this.container(), index, textModel.format, `${textModel.properties.join(", ")}`);
     }
     renderContent(index, expr) {
         this.codeStrings.renderContent(this.container(), index, this.getterFor(expr));
@@ -121,7 +122,8 @@ class CodeWriter {
     }
     updateProperty(name, expr) {
         let textModel = this.parseText(expr);
-        this.codeStrings.updateProperty(this.container(), name, textModel.format, `${textModel.properties.join(", ")}`);
+        if(textModel.format)
+            this.codeStrings.updateProperty(this.container(), name, textModel.format, `${textModel.properties.join(", ")}`);
     }
     registerPipeline(alias, code) { this.pipes[alias] = code; }
     getPipelineLangTarget() { return null; }
