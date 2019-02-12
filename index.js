@@ -1,4 +1,4 @@
-const parseXML = require("@rgrove/parse-xml"), EOL = require("os").EOL;
+const parseXML = require("@rgrove/parse-xml"), EOL = require("os").EOL, fs = require("fs"), path = require("path");
 
 
 function normalizeHtmlStr(str) {
@@ -129,7 +129,7 @@ class CodeWriter {
     registerPipeline(alias, code) { this.pipes[alias] = code; }
     getPipelineLangTarget() { return null; }
     getterFor(n, pipe) {
-        return n && (this.pipes[pipe] || "$0").replace("$0", this.vars.some(v => n.startsWith(v + ".")) ? n : "viewModel." + n); 
+        return n && (this.pipes[pipe] || "$0").replace("$0", this.vars.some(v => n.startsWith(v + ".")) ? n : "viewModel." + n);
     }
     parseForeachQuery(queryStr) {
         var matches = /([\w\.]+)\s+(\w+)\s+in\s+([\w\.]+)/.exec(queryStr);
@@ -176,12 +176,12 @@ class CSharpCodeWriter extends CodeWriter {
     getPipelineLangTarget() { return "cs"; }
     initialize(name) {
         super.initialize();
-        name = name || "Component";
+        name = name || "NewComponent";
         this.write("using DevExpress.Web.Bootstrap.Internal.Components.Core;");
         this.write("");
         this.write("namespace DevExpress.Web.Bootstrap.Internal.Components {");
         this.indentLevel++;
-        this.write("public partial class " + name + "Component: ComponentBase {");
+        this.write("public partial class " + name + ": ComponentBase {");
         this.indentLevel++;
         this.write(`public override void CreateLayout(WebControl ${this.container()}) {`);
         this.indentLevel++;
@@ -303,12 +303,69 @@ class HierarchyBuilder {
     }
     processAttribute(attr) { this.codeWriter.updateProperty(attr.name, attr.value); }
 }
-
+const defaultGeneratorSettings = {
+    componentsFolder: "components",
+    componentPattern: "*.generated.*",
+    referencesFile: "projectsettings.csproj",
+    resourcesFile: "properties/assemblyInfo.cs",
+    postfixes: ["-v3", "-v4"]
+};
+class ComponentsGenerator {
+    constructor(workingFolder, settings = defaultGeneratorSettings) {
+        this.workingFolder = workingFolder;
+        this.settings = settings;
+    }
+    updateProjectReferences() {
+        let componentsInfos = this.getComponentsInfo();
+        let p = path.join(this.workingFolder, this.settings.referencesFile);
+        let content = fs.readFileSync(p).toString("utf8");
+        let xmlDoc = parseXML(content);
+    }
+    updateProjectResources() {
+        let componentsInfos = this.getComponentsInfo();
+        let p = path.join(this.workingFolder, this.settings.resourcesFile);
+        let content = fs.readFileSync(p).toString("utf8");
+        let rows = content.split(EOL)
+                    .filter(r => { return !/WebResource\(Components\.\w+\./.test(r) && !!r; })
+                    .concat(componentsInfos.filter(c => c.extension !== "cs").map(c => {
+                        let mime = c.extension === "js" ? "Javascript" : "Css";
+                        return `[assembly: WebResource(Components.${c.id}.${c.name}_${mime}ResourceName, "text/${mime.toLowerCase()}")]`;
+                    }));
+        fs.writeFileSync(p, rows.join(EOL));
+    }
+    getPatternRegex() {
+        return new RegExp(this.settings.componentPattern.replace(/\./g, "\\.").replace(/\*/g, "([\\w-]+)"));
+    }
+    getComponentsInfo() {
+        let p = path.join(this.workingFolder, this.settings.componentsFolder);
+        return fs.readdirSync(p)
+            .map(f => {
+                var matches = this.getPatternRegex().exec(f);
+                if(matches !== null) {
+                    return {
+                        id: this.settings.postfixes.reduce((s, c) => s.replace(c, ""), matches[1]),
+                        name: matches[1],
+                        extension: matches[2],
+                        path: path.relative(this.workingFolder, path.join(p, f))
+                    };
+                }
+                return null;
+            })
+            .filter(f => !!f); 
+    }
+    createClientCode(name, content) {
+        return (new HierarchyBuilder(new JavascriptCodeWriter())).build(content, name);
+    }
+    createServerCode(name, content) {
+        return (new HierarchyBuilder(new CSharpCodeWriter())).build(content, name);
+    }
+}
 module.exports = {
     HierarchyBuilder: HierarchyBuilder,
     HierarchyBuilderOptions: HierarchyBuilderOptions,
     HtmlParser: HtmlParser,
     CodeWriter: CodeWriter,
     JavascriptCodeWriter: JavascriptCodeWriter,
-    CSharpCodeWriter: CSharpCodeWriter
+    CSharpCodeWriter: CSharpCodeWriter,
+    ComponentsGenerator: ComponentsGenerator
 };
